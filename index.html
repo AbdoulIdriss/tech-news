@@ -102,6 +102,16 @@ body.open .scrim{opacity:1;pointer-events:auto}body.open .panel{transform:none}b
 .go.big{font-size:1.15rem;padding:15px 28px;border-radius:14px}
 .card p b{color:var(--ink);font-weight:600}
 .credit{color:var(--muted);font-size:.85rem;padding-bottom:70px;margin-top:-50px}
+:root{--hm:#2563eb;--an:#be185d}
+.sites h2{font:600 1.15rem var(--display);margin:30px 0 6px;letter-spacing:-.01em}
+.sites p{color:var(--muted);font-size:.92rem;margin:0 0 14px;max-width:72ch}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.site{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.site b{font:600 .95rem var(--display)}
+.site span{display:flex;gap:6px}
+.site a{font:600 .8rem var(--body);color:var(--accent);text-decoration:none;border:1px solid var(--line);padding:3px 10px;border-radius:999px}
+.site a:hover{border-color:var(--accent)}
+.credit a{color:var(--accent)}
 @media (max-width:720px){.grid{grid-template-columns:1fr}.go span.t{display:none}.go{padding:13px 16px}.hero{padding-top:18px}.card.feat{padding:20px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
@@ -146,6 +156,7 @@ body.open .scrim{opacity:1;pointer-events:auto}body.open .panel{transform:none}b
     <div class="row" id="jstatus" aria-live="polite"></div>
     <div class="row" id="jfilters"></div>
   </section>
+  <section class="sites"><h2 id="sitesT"></h2><p id="sitesB"></p><div class="sgrid" id="sgrid"></div></section>
   <div class="head"><div><h2 id="jtitle"></h2><span id="jcount"></span></div></div>
   <ul class="grid" id="jlist"></ul>
   <p class="credit" id="credit"></p>
@@ -162,7 +173,7 @@ const T={
  en:{h1:"Your daily tech radar.",sub:"Find what's new in programming, mobile, AI and innovation. Read every story right here, no tab-hopping. Live from Hacker News, GitHub and Dev.to, last 5 months only.",
   ph:"Search a topic, or leave empty for the latest…",find:"Find",busy:"Searching",topics:"Try",
   cats:{all:"All",mobile:"Mobile dev",programming:"Programming",ai:"AI",apps:"Apps",innovation:"Innovation"},
-  latest:"Latest across the web",win:"last 5 months",newest:"Newest",popular:"Popular",read:"Read here",nNews:"News",nJobs:"Jobs",jh1:"Junior Flutter & Angular jobs, remote.",jsub:"Entry-level remote positions open to candidates worldwide, gathered live from Remotive, Jobicy and RemoteOK.",jfind:"Find jobs",jlatest:"Junior remote jobs",jn:n=>n+(n==1?" job":" jobs"),jwin:"last 60 days",jall:"All stacks",jworld:"Open worldwide",jnoT:"No matching jobs right now",jnoB:"Junior roles are rare. Switch off “Open worldwide” or check again later.",jerrT:"Couldn't reach any job board",apply:"Apply",credit:"Listings from Remotive, Jobicy and RemoteOK. Each link goes to the original posting.",close:"Close",orig:"Open original",cantT:"This one can't be shown here",cantB:"The site doesn't allow reading inside other pages. You can still open the original.",results:q=>"Results for “"+q+"”",n:n=>n+(n==1?" story":" stories"),
+  latest:"Latest across the web",win:"last 5 months",newest:"Newest",popular:"Popular",read:"Read here",nNews:"News",nJobs:"Jobs",jh1:"Junior Flutter & Angular jobs, remote.",jsub:"Entry-level remote positions open to candidates worldwide, gathered live from five job boards. Plus one-click searches on LinkedIn, Indeed and more.",sitesT:"Search the big job sites too",sitesB:"LinkedIn, Indeed and Glassdoor don't let other websites read their listings. These buttons open their own search pages with your filters already set: junior, remote, last 30 days.",jfind:"Find jobs",jlatest:"Junior remote jobs",jn:n=>n+(n==1?" job":" jobs"),jwin:"last 30 days",jall:"All stacks",jworld:"Open worldwide",jnoT:"No matching jobs right now",jnoB:"Junior roles are rare. Switch off “Open worldwide” or check again later.",jerrT:"Couldn't reach any job board",apply:"Apply",credit:"Listings from <a href='https://remotive.com'>Remotive</a>, <a href='https://jobicy.com'>Jobicy</a>, <a href='https://remoteok.com'>RemoteOK</a>, <a href='https://himalayas.app'>Himalayas</a> and <a href='https://www.arbeitnow.com'>Arbeitnow</a>. Each link goes to the original posting.",close:"Close",orig:"Open original",cantT:"This one can't be shown here",cantB:"The site doesn't allow reading inside other pages. You can still open the original.",results:q=>"Results for “"+q+"”",n:n=>n+(n==1?" story":" stories"),
   noT:"Nothing in this category yet",noB:"Try another category, or search a specific topic.",
   errT:"Couldn't reach any source",errB:"Open this file from your own website or by double-clicking it (not inside a preview window), check your connection, then try again.",retry:"Try again",
   pts:"points",com:"comments",stars:"stars",react:"reactions",fail:"unavailable",updated:"Updated",
@@ -170,14 +181,14 @@ const T={
  fr:{h1:"Votre radar tech au quotidien.",sub:"Découvrez les nouveautés en programmation, mobile, IA et innovation. Lisez chaque article ici, sans changer de page. En direct de Hacker News, GitHub et Dev.to, 5 derniers mois seulement.",
   ph:"Cherchez un sujet, ou laissez vide pour les dernières actus…",find:"Trouver",busy:"Recherche",topics:"Essayez",
   cats:{all:"Tout",mobile:"Mobile",programming:"Programmation",ai:"IA",apps:"Apps",innovation:"Innovation"},
-  latest:"Les dernières actus du web",win:"5 derniers mois",newest:"Récents",popular:"Populaires",read:"Lire ici",nNews:"Actus",nJobs:"Emplois",jh1:"Emplois junior Flutter & Angular, en télétravail.",jsub:"Postes débutants en télétravail, ouverts aux candidats du monde entier, récupérés en direct sur Remotive, Jobicy et RemoteOK.",jfind:"Trouver des emplois",jlatest:"Emplois junior à distance",jn:n=>n+(n==1?" offre":" offres"),jwin:"60 derniers jours",jall:"Toutes les technos",jworld:"Ouvert au monde entier",jnoT:"Aucune offre pour l'instant",jnoB:"Les postes junior sont rares. Désactivez « Ouvert au monde entier » ou réessayez plus tard.",jerrT:"Aucun site d'emploi accessible",apply:"Postuler",credit:"Offres de Remotive, Jobicy et RemoteOK. Chaque lien mène à l'annonce d'origine.",close:"Fermer",orig:"Ouvrir l'original",cantT:"Impossible d'afficher cet article ici",cantB:"Le site interdit la lecture dans une autre page. Vous pouvez ouvrir l'original.",results:q=>"Résultats pour « "+q+" »",n:n=>n+(n==1?" article":" articles"),
+  latest:"Les dernières actus du web",win:"5 derniers mois",newest:"Récents",popular:"Populaires",read:"Lire ici",nNews:"Actus",nJobs:"Emplois",jh1:"Emplois junior Flutter & Angular, en télétravail.",jsub:"Postes débutants en télétravail, ouverts aux candidats du monde entier, récupérés en direct sur cinq sites d'emploi. Plus des recherches en un clic sur LinkedIn, Indeed et d'autres.",sitesT:"Cherchez aussi sur les grands sites d'emploi",sitesB:"LinkedIn, Indeed et Glassdoor interdisent la lecture de leurs offres par d'autres sites. Ces boutons ouvrent leurs pages de recherche avec vos filtres déjà réglés : junior, télétravail, 30 derniers jours.",jfind:"Trouver des emplois",jlatest:"Emplois junior à distance",jn:n=>n+(n==1?" offre":" offres"),jwin:"30 derniers jours",jall:"Toutes les technos",jworld:"Ouvert au monde entier",jnoT:"Aucune offre pour l'instant",jnoB:"Les postes junior sont rares. Désactivez « Ouvert au monde entier » ou réessayez plus tard.",jerrT:"Aucun site d'emploi accessible",apply:"Postuler",credit:"Offres de <a href='https://remotive.com'>Remotive</a>, <a href='https://jobicy.com'>Jobicy</a>, <a href='https://remoteok.com'>RemoteOK</a>, <a href='https://himalayas.app'>Himalayas</a> et <a href='https://www.arbeitnow.com'>Arbeitnow</a>. Chaque lien mène à l'annonce d'origine.",close:"Fermer",orig:"Ouvrir l'original",cantT:"Impossible d'afficher cet article ici",cantB:"Le site interdit la lecture dans une autre page. Vous pouvez ouvrir l'original.",results:q=>"Résultats pour « "+q+" »",n:n=>n+(n==1?" article":" articles"),
   noT:"Rien dans cette catégorie",noB:"Essayez une autre catégorie ou cherchez un sujet précis.",
   errT:"Aucune source accessible",errB:"Ouvrez ce fichier depuis votre site ou en double-cliquant dessus (pas dans un aperçu), vérifiez votre connexion, puis réessayez.",retry:"Réessayer",
   pts:"points",com:"commentaires",stars:"étoiles",react:"réactions",fail:"indisponible",updated:"Mis à jour",
   ago:(v,u)=>"il y a "+v+" "+u,u:{m:"min",h:"h",d:"j"}}
 };
 const SRC={hn:"Hacker News",gh:"GitHub",dev:"Dev.to"};
-const JSRC={rm:"Remotive",jb:"Jobicy",ro:"RemoteOK"};
+const JSRC={rm:"Remotive",jb:"Jobicy",ro:"RemoteOK",hm:"Himalayas",an:"Arbeitnow"};
 const PRIORITY=["mobile","ai","programming","apps","innovation"];
 const RX={
  mobile:/\b(flutter|dart|swift|swiftui|ios|android|kotlin|jetpack|react native|expo|xcode|mobile|iphone|ipad|cross-platform)\b/i,
@@ -300,7 +311,7 @@ function ui(){
   $("topics").innerHTML=`<span class="lbl">${t.topics}</span>`+TOPICS.map(x=>`<button class="topic">${x}</button>`).join("");
   document.querySelectorAll(".lang button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.l==lang));
   document.querySelector('#modes [data-m=news]').textContent=t.nNews;document.querySelector('#modes [data-m=jobs]').textContent=t.nJobs;
-  $("jh1").textContent=t.jh1;$("jsub").textContent=t.jsub;$("credit").textContent=t.credit;
+  $("jh1").textContent=t.jh1;$("jsub").textContent=t.jsub;$("credit").innerHTML=t.credit;$("credit").querySelectorAll("a").forEach(a=>{a.target="_blank";a.rel="noopener noreferrer"});$("sitesT").textContent=t.sitesT;$("sitesB").textContent=t.sitesB;drawSites();
   if(!jloading)$("jgoTxt").textContent=t.jfind;
   render();jrender();
 }
@@ -368,7 +379,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.body.class
 $("sort").onclick=e=>{const b=e.target.closest("button");if(b){sort=b.dataset.s;render()}};
 
 /* ---------- jobs ---------- */
-const JOB_DAYS=60;
+const JOB_DAYS=30;
 const strip=h=>(h||"").replace(/<[^>]+>/g," ").replace(/&[a-z#0-9]+;/gi," ").replace(/\s+/g," ");
 const SEN=/\b(senior|sr\.?|lead|staff|principal|head of|architect|manager|director|expert|mid[- ]?level|mid[- ]?senior|vp)\b/i;
 const JUN=/\b(junior|jr\.?|entry[- ]level|graduate|trainee|intern(?:ship)?|apprentice|fresher|early[- ]career|beginner)\b/i;
@@ -410,11 +421,19 @@ const remoteok=async t=>(await jget("https://remoteok.com/api?tag="+enc(t))).fil
   src:"ro",id:j.id,title:j.position,company:j.company,loc:j.location,salary:j.salary_min?`$${(+j.salary_min).toLocaleString()}–${(+j.salary_max).toLocaleString()}`:"",
   url:j.url||j.apply_url,ts:j.epoch?j.epoch*1000:Date.parse(j.date),html:j.description,tags:(j.tags||[]).join(" ")}));
 
+const himalayas=async t=>((await jget("https://himalayas.app/jobs/api/search?sort=recent&seniority=Entry-level&q="+enc(t))).jobs||[]).map(j=>job({
+  src:"hm",id:j.guid,title:j.title,company:j.companyName,loc:(j.locationRestrictions||[]).map(x=>x.name||x).join(", "),type:j.employmentType,
+  level:[].concat(j.seniority||[]).join(", "),salary:j.minSalary?`${j.currency||""} ${(+j.minSalary).toLocaleString()}–${(+(j.maxSalary||j.minSalary)).toLocaleString()}`.trim():"",
+  url:j.applicationLink,ts:+j.pubDate||Date.parse(j.pubDate),html:j.description,tags:(j.categories||[]).join(" ")}));
+const arbeitnow=async p=>((await jget("https://www.arbeitnow.com/api/job-board-api?page="+p)).data||[]).filter(j=>j.remote).map(j=>job({
+  src:"an",id:j.slug,title:j.title,company:j.company_name,loc:j.location?"Remote · "+j.location:"",type:[].concat(j.job_types||[]).join(", "),
+  url:j.url,ts:(j.created_at||0)*1000,html:j.description,tags:(j.tags||[]).join(" ")}));
+
 async function jfind(){
   if(jloading)return;
   const t=T[lang],b=$("jgo");jloading=true;jfailed=false;jloaded=true;
   b.disabled=true;b.classList.add("busy");$("jgoTxt").textContent=t.busy;
-  const plan=[["rm",()=>remotive("flutter")],["rm",()=>remotive("angular")],["jb",()=>jobicy("flutter")],["jb",()=>jobicy("angular")],["ro",()=>remoteok("flutter")],["ro",()=>remoteok("angular")]];
+  const plan=[["rm",()=>remotive("flutter")],["rm",()=>remotive("angular")],["jb",()=>jobicy("flutter")],["jb",()=>jobicy("angular")],["ro",()=>remoteok("flutter")],["ro",()=>remoteok("angular")],["hm",()=>himalayas("flutter")],["hm",()=>himalayas("angular")],["an",()=>arbeitnow(1)],["an",()=>arbeitnow(2)]];
   const st={},ok={};plan.forEach(([k])=>{st[k]="load";ok[k]=0});drawJStatus(st);jrender();
   const res=await Promise.all(plan.map(async([k,fn])=>{try{const r=await fn();ok[k]++;return r}catch(e){return[]}}));
   Object.keys(st).forEach(k=>st[k]=ok[k]?"ok":"err");drawJStatus(st);
@@ -445,6 +464,19 @@ function jrender(){
       <a class="title" href="${esc(j.url)}" data-n="${n}">${esc(j.title)}</a>
       <p><b>${esc(j.company)}</b>${j.loc?" · "+esc(j.loc):""}</p>
       <div class="meta">${meta.map(m=>`<span>${esc(m)}</span>`).join("")}${isNaN(j.ts)?"":`<span>${ago(j.ts)}</span>`}<span class="read">${j.html?t.read:t.apply}</span></div></li>`}).join("");
+}
+const SITES=[
+ ["LinkedIn",k=>"https://www.linkedin.com/jobs/search/?keywords="+enc(k)+"&location=Worldwide&f_WT=2&f_E=1%2C2&f_TPR=r2592000&sortBy=DD"],
+ ["Indeed",k=>"https://www.indeed.com/jobs?q="+enc(k+" remote")+"&fromage=30&sort=date"],
+ ["Glassdoor",k=>"https://www.glassdoor.com/Job/jobs.htm?sc.keyword="+enc(k+" remote")+"&fromAge=30"],
+ ["Google Jobs",k=>"https://www.google.com/search?q="+enc(k+" remote jobs")+"&ibp=htl;jobs&htichips=date_posted:month"],
+ ["ZipRecruiter",k=>"https://www.ziprecruiter.com/jobs-search?search="+enc(k+" remote")+"&days=30"],
+ ["Jooble",k=>"https://jooble.org/SearchResult?ukw="+enc(k+" remote")],
+ ["We Work Remotely",k=>"https://weworkremotely.com/remote-jobs/search?term="+enc(k)]
+];
+function drawSites(){
+  const kw=[["Flutter","junior flutter developer"],["Angular","junior angular developer"]];
+  $("sgrid").innerHTML=SITES.map(([n,f])=>`<div class="site"><b>${n}</b><span>${kw.map(([l,k])=>`<a href="${esc(f(k))}" target="_blank" rel="noopener noreferrer">${l}</a>`).join("")}</span></div>`).join("");
 }
 function setMode(m){
   mode=m;[["newsHero","news"],["newsTabs","news"],["newsMain","news"],["jobsView","jobs"]].forEach(([id,k])=>$(id).hidden=(k!==m));
