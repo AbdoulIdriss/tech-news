@@ -20,12 +20,12 @@
 body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--body);-webkit-font-smoothing:antialiased}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
-.nav{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 0}
 .brand{display:flex;align-items:center;gap:10px;font:700 1.15rem var(--display);letter-spacing:-.02em}
 .brand svg{width:30px;height:30px}
-.lang{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px}
-.lang button{font:600 .82rem var(--body);border:0;background:none;color:var(--muted);padding:5px 11px;border-radius:7px;cursor:pointer}
-.lang button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.lang,.modes{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px}
+.lang button,.modes button{font:600 .82rem var(--body);border:0;background:none;color:var(--muted);padding:5px 11px;border-radius:7px;cursor:pointer}
+.lang button[aria-pressed=true],.modes button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
 .hero{padding:34px 0 22px}
 h1{font:700 clamp(2rem,5.5vw,3.3rem)/1.08 var(--display);letter-spacing:-.035em;margin:0 0 12px;max-width:16ch}
 .sub{color:var(--muted);margin:0 0 26px;max-width:52ch;font-size:1.05rem}
@@ -95,6 +95,13 @@ body.open .scrim{opacity:1;pointer-events:auto}body.open .panel{transform:none}b
 .pb iframe{display:block;width:100%;height:100%;border:0;background:var(--surface)}
 .pb .msg{margin:24px}
 .pb .sk{margin:24px;height:110px}
+[hidden]{display:none!important}
+.modes button{font-size:.92rem;padding:6px 16px}
+:root{--rm:#0d8a8a;--jb:#7c3aed;--ro:#d9480f}
+.topic[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.go.big{font-size:1.15rem;padding:15px 28px;border-radius:14px}
+.card p b{color:var(--ink);font-weight:600}
+.credit{color:var(--muted);font-size:.85rem;padding-bottom:70px;margin-top:-50px}
 @media (max-width:720px){.grid{grid-template-columns:1fr}.go span.t{display:none}.go{padding:13px 16px}.hero{padding-top:18px}.card.feat{padding:20px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
@@ -107,10 +114,11 @@ body.open .scrim{opacity:1;pointer-events:auto}body.open .panel{transform:none}b
       <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent)"/><circle cx="16" cy="16" r="9" stroke="#fff" stroke-opacity=".45" stroke-width="2"/><circle cx="16" cy="16" r="4" stroke="#fff" stroke-width="2"/><path d="M16 16 24 8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
       TechFind
     </span>
+    <div class="modes" id="modes" role="group" aria-label="Section"><button data-m="news" aria-pressed="true"></button><button data-m="jobs" aria-pressed="false"></button></div>
     <div class="lang" role="group" aria-label="Language"><button data-l="en" aria-pressed="true">EN</button><button data-l="fr" aria-pressed="false">FR</button></div>
   </nav>
 
-  <section class="hero">
+  <section class="hero" id="newsHero">
     <h1 id="h1"></h1>
     <p class="sub" id="sub"></p>
     <div class="bar">
@@ -123,11 +131,24 @@ body.open .scrim{opacity:1;pointer-events:auto}body.open .panel{transform:none}b
   </section>
 </div>
 
-<div class="tabsbar"><div class="wrap"><div class="tabs" id="tabs" role="group"></div></div></div>
+<div class="tabsbar" id="newsTabs"><div class="wrap"><div class="tabs" id="tabs" role="group"></div></div></div>
 
-<main class="wrap">
+<main class="wrap" id="newsMain">
   <div class="head"><div><h2 id="title"></h2><span id="count"></span></div><div class="sort" id="sort" role="group"></div></div>
   <ul class="grid" id="list"></ul>
+</main>
+
+<main class="wrap" id="jobsView" hidden>
+  <section class="hero">
+    <h1 id="jh1"></h1>
+    <p class="sub" id="jsub"></p>
+    <button class="go big" id="jgo"><span id="jgoTxt"></span><span class="sp" aria-hidden="true"></span></button>
+    <div class="row" id="jstatus" aria-live="polite"></div>
+    <div class="row" id="jfilters"></div>
+  </section>
+  <div class="head"><div><h2 id="jtitle"></h2><span id="jcount"></span></div></div>
+  <ul class="grid" id="jlist"></ul>
+  <p class="credit" id="credit"></p>
 </main>
 
 <div class="scrim" id="scrim"></div>
@@ -141,7 +162,7 @@ const T={
  en:{h1:"Your daily tech radar.",sub:"Find what's new in programming, mobile, AI and innovation. Read every story right here, no tab-hopping. Live from Hacker News, GitHub and Dev.to, last 5 months only.",
   ph:"Search a topic, or leave empty for the latest…",find:"Find",busy:"Searching",topics:"Try",
   cats:{all:"All",mobile:"Mobile dev",programming:"Programming",ai:"AI",apps:"Apps",innovation:"Innovation"},
-  latest:"Latest across the web",win:"last 5 months",newest:"Newest",popular:"Popular",read:"Read here",close:"Close",orig:"Open original",cantT:"This one can't be shown here",cantB:"The site doesn't allow reading inside other pages. You can still open the original.",results:q=>"Results for “"+q+"”",n:n=>n+(n==1?" story":" stories"),
+  latest:"Latest across the web",win:"last 5 months",newest:"Newest",popular:"Popular",read:"Read here",nNews:"News",nJobs:"Jobs",jh1:"Junior Flutter & Angular jobs, remote.",jsub:"Entry-level remote positions open to candidates worldwide, gathered live from Remotive, Jobicy and RemoteOK.",jfind:"Find jobs",jlatest:"Junior remote jobs",jn:n=>n+(n==1?" job":" jobs"),jwin:"last 60 days",jall:"All stacks",jworld:"Open worldwide",jnoT:"No matching jobs right now",jnoB:"Junior roles are rare. Switch off “Open worldwide” or check again later.",jerrT:"Couldn't reach any job board",apply:"Apply",credit:"Listings from Remotive, Jobicy and RemoteOK. Each link goes to the original posting.",close:"Close",orig:"Open original",cantT:"This one can't be shown here",cantB:"The site doesn't allow reading inside other pages. You can still open the original.",results:q=>"Results for “"+q+"”",n:n=>n+(n==1?" story":" stories"),
   noT:"Nothing in this category yet",noB:"Try another category, or search a specific topic.",
   errT:"Couldn't reach any source",errB:"Open this file from your own website or by double-clicking it (not inside a preview window), check your connection, then try again.",retry:"Try again",
   pts:"points",com:"comments",stars:"stars",react:"reactions",fail:"unavailable",updated:"Updated",
@@ -149,13 +170,14 @@ const T={
  fr:{h1:"Votre radar tech au quotidien.",sub:"Découvrez les nouveautés en programmation, mobile, IA et innovation. Lisez chaque article ici, sans changer de page. En direct de Hacker News, GitHub et Dev.to, 5 derniers mois seulement.",
   ph:"Cherchez un sujet, ou laissez vide pour les dernières actus…",find:"Trouver",busy:"Recherche",topics:"Essayez",
   cats:{all:"Tout",mobile:"Mobile",programming:"Programmation",ai:"IA",apps:"Apps",innovation:"Innovation"},
-  latest:"Les dernières actus du web",win:"5 derniers mois",newest:"Récents",popular:"Populaires",read:"Lire ici",close:"Fermer",orig:"Ouvrir l'original",cantT:"Impossible d'afficher cet article ici",cantB:"Le site interdit la lecture dans une autre page. Vous pouvez ouvrir l'original.",results:q=>"Résultats pour « "+q+" »",n:n=>n+(n==1?" article":" articles"),
+  latest:"Les dernières actus du web",win:"5 derniers mois",newest:"Récents",popular:"Populaires",read:"Lire ici",nNews:"Actus",nJobs:"Emplois",jh1:"Emplois junior Flutter & Angular, en télétravail.",jsub:"Postes débutants en télétravail, ouverts aux candidats du monde entier, récupérés en direct sur Remotive, Jobicy et RemoteOK.",jfind:"Trouver des emplois",jlatest:"Emplois junior à distance",jn:n=>n+(n==1?" offre":" offres"),jwin:"60 derniers jours",jall:"Toutes les technos",jworld:"Ouvert au monde entier",jnoT:"Aucune offre pour l'instant",jnoB:"Les postes junior sont rares. Désactivez « Ouvert au monde entier » ou réessayez plus tard.",jerrT:"Aucun site d'emploi accessible",apply:"Postuler",credit:"Offres de Remotive, Jobicy et RemoteOK. Chaque lien mène à l'annonce d'origine.",close:"Fermer",orig:"Ouvrir l'original",cantT:"Impossible d'afficher cet article ici",cantB:"Le site interdit la lecture dans une autre page. Vous pouvez ouvrir l'original.",results:q=>"Résultats pour « "+q+" »",n:n=>n+(n==1?" article":" articles"),
   noT:"Rien dans cette catégorie",noB:"Essayez une autre catégorie ou cherchez un sujet précis.",
   errT:"Aucune source accessible",errB:"Ouvrez ce fichier depuis votre site ou en double-cliquant dessus (pas dans un aperçu), vérifiez votre connexion, puis réessayez.",retry:"Réessayer",
   pts:"points",com:"commentaires",stars:"étoiles",react:"réactions",fail:"indisponible",updated:"Mis à jour",
   ago:(v,u)=>"il y a "+v+" "+u,u:{m:"min",h:"h",d:"j"}}
 };
 const SRC={hn:"Hacker News",gh:"GitHub",dev:"Dev.to"};
+const JSRC={rm:"Remotive",jb:"Jobicy",ro:"RemoteOK"};
 const PRIORITY=["mobile","ai","programming","apps","innovation"];
 const RX={
  mobile:/\b(flutter|dart|swift|swiftui|ios|android|kotlin|jetpack|react native|expo|xcode|mobile|iphone|ipad|cross-platform)\b/i,
@@ -165,7 +187,7 @@ const RX={
  innovation:/(startup|quantum|robot|chips?|semiconductor|breakthrough|funding|raises|satellite|battery|hardware|launch|nasa|spacex|open.?source|research)/i
 };
 const TOPICS=["Flutter","SwiftUI","Kotlin","Rust","AI agents","Next.js"];
-let lang=get("tf_lang")||"en",cat="all",items=[],when=null,lastQ="",loading=false,failed=false,view=[],sort="new";
+let lang=get("tf_lang")||"en",cat="all",items=[],when=null,lastQ="",loading=false,failed=false,view=[],sort="new",mode="news",jobs=[],jview=[],jstack="all",jworld=true,jloading=false,jfailed=false,jloaded=false,jwhen=null;
 const $=id=>document.getElementById(id);
 function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function put(k,v){try{localStorage.setItem(k,v)}catch(e){}}
@@ -277,7 +299,10 @@ function ui(){
   $("px").setAttribute("aria-label",t.close);
   $("topics").innerHTML=`<span class="lbl">${t.topics}</span>`+TOPICS.map(x=>`<button class="topic">${x}</button>`).join("");
   document.querySelectorAll(".lang button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.l==lang));
-  render();
+  document.querySelector('#modes [data-m=news]').textContent=t.nNews;document.querySelector('#modes [data-m=jobs]').textContent=t.nJobs;
+  $("jh1").textContent=t.jh1;$("jsub").textContent=t.jsub;$("credit").textContent=t.credit;
+  if(!jloading)$("jgoTxt").textContent=t.jfind;
+  render();jrender();
 }
 function drawSort(){const t=T[lang];$("sort").innerHTML=[["new",t.newest],["pop",t.popular]].map(([k,l])=>`<button data-s="${k}" aria-pressed="${sort==k}">${l}</button>`).join("")}
 
@@ -295,6 +320,10 @@ table{border-collapse:collapse;display:block;overflow:auto}td,th{border:1px soli
   return `<!doctype html><meta charset="utf-8"><base target="_blank"><style>${css}</style><body>${html}`;
 }
 async function content(i){
+  if(i.kind==="job"){
+    if(!i.html)throw new Error("no description");
+    return `<h1>${esc(i.title)}</h1><p class="m">${esc(i.company)} · ${esc(i.loc||"Remote")}${i.salary?" · "+esc(i.salary):""}</p>`+i.html;
+  }
   if(i.src==="dev"){
     const a=await getJSON("https://dev.to/api/articles/"+i.id);
     return `<h1>${esc(a.title)}</h1><p class="m">${esc(a.user&&a.user.name||"")} · ${esc(a.readable_publish_date||"")} · ${a.reading_time_minutes||1} min</p>`+(a.cover_image?`<img src="${esc(a.cover_image)}" alt="">`:"")+a.body_html;
@@ -320,7 +349,7 @@ async function content(i){
 }
 async function openReader(i,opener){
   const t=T[lang],my=++token;lastFocus=opener;
-  $("pt").textContent=i.title;$("po").href=i.url;$("po").textContent=t.orig+" ↗";
+  $("pt").textContent=i.title;$("po").href=i.url;$("po").textContent=(i.kind==="job"?t.apply:t.orig)+" ↗";
   $("pb").innerHTML='<div class="sk"></div><div class="sk"></div><div class="sk"></div>';
   bgEls().forEach(e=>e.inert=true);panel.inert=false;document.body.classList.add("open");$("px").focus();
   try{
@@ -337,6 +366,95 @@ $("list").onclick=e=>{const a=e.target.closest("a.title");if(!a||e.ctrlKey||e.me
 $("scrim").onclick=closeReader;$("px").onclick=closeReader;
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.body.classList.contains("open"))closeReader()});
 $("sort").onclick=e=>{const b=e.target.closest("button");if(b){sort=b.dataset.s;render()}};
+
+/* ---------- jobs ---------- */
+const JOB_DAYS=60;
+const strip=h=>(h||"").replace(/<[^>]+>/g," ").replace(/&[a-z#0-9]+;/gi," ").replace(/\s+/g," ");
+const SEN=/\b(senior|sr\.?|lead|staff|principal|head of|architect|manager|director|expert|mid[- ]?level|mid[- ]?senior|vp)\b/i;
+const JUN=/\b(junior|jr\.?|entry[- ]level|graduate|trainee|intern(?:ship)?|apprentice|fresher|early[- ]career|beginner)\b/i;
+const JUNDESC=/(entry[- ]level|\b[01]\s*(?:-|–|to)\s*[23]\+?\s*years?|junior (?:flutter|angular|mobile|front-?end|software|developer|engineer|dev)\b|new grad|recent graduate|fresh graduate)/i;
+const MANYYRS=/\b(?:[4-9]|1\d)\+?\s*(?:\+\s*)?years/i;
+function isWorld(loc){
+  const l=(loc||"").toLowerCase().trim();
+  return !l||/worldwide|anywhere|global|world|international|any country|all countries/.test(l)||l==="remote";
+}
+function job(o){
+  const plain=strip(o.html),head=o.title+" "+(o.tags||"");
+  const has=rx=>rx.test(head)||(plain.match(new RegExp(rx.source,"gi"))||[]).length>=3;
+  const stacks=[];if(has(/flutter/i))stacks.push("flutter");if(has(/angular/i))stacks.push("angular");
+  if(!stacks.length)return null;
+  const lvl=o.level||"";let junior=false;
+  if(SEN.test(o.title)&&!JUN.test(o.title))return null;
+  if(JUN.test(o.title)||/junior|entry/i.test(lvl))junior=true;
+  else if(!/senior|mid/i.test(lvl)&&JUNDESC.test(plain)&&!MANYYRS.test(plain))junior=true;
+  if(!junior)return null;
+  return {kind:"job",src:o.src,id:o.id,title:o.title,company:o.company||"",loc:o.loc||"",type:o.type||"",level:lvl,salary:o.salary||"",
+    url:o.url,ts:o.ts,html:o.html||"",stacks,world:isWorld(o.loc)};
+}
+/* ---------- end jobs ---------- */
+async function jget(url){      // direct first; public CORS proxy only as a fallback
+  try{return await getJSON(url)}catch(e){
+    const c=new AbortController(),id=setTimeout(()=>c.abort(),15000);
+    try{const r=await fetch("https://api.allorigins.win/raw?url="+enc(url),{signal:c.signal});if(!r.ok)throw e;return await r.json()}
+    finally{clearTimeout(id)}
+  }
+}
+const remotive=async t=>((await jget("https://remotive.com/api/remote-jobs?limit=100&search="+enc(t))).jobs||[]).map(j=>job({
+  src:"rm",id:j.id,title:j.title,company:j.company_name,loc:j.candidate_required_location,type:(j.job_type||"").replace(/_/g," "),salary:j.salary,
+  url:j.url,ts:Date.parse(j.publication_date),html:j.description,tags:(j.tags||[]).join(" ")}));
+const jobicy=async t=>((await jget("https://jobicy.com/api/v2/remote-jobs?count=50&tag="+enc(t))).jobs||[]).map(j=>job({
+  src:"jb",id:j.id,title:j.jobTitle,company:j.companyName,loc:[].concat(j.jobGeo||[]).join(", "),type:[].concat(j.jobType||[]).join(", "),
+  level:[].concat(j.jobLevel||[]).join(", "),salary:j.annualSalaryMin?`${j.salaryCurrency||""} ${j.annualSalaryMin}–${j.annualSalaryMax||""}`.trim():"",
+  url:j.url,ts:Date.parse(j.pubDate),html:j.jobDescription||j.jobExcerpt||""}));
+const remoteok=async t=>(await jget("https://remoteok.com/api?tag="+enc(t))).filter(j=>j&&j.id&&j.position).map(j=>job({
+  src:"ro",id:j.id,title:j.position,company:j.company,loc:j.location,salary:j.salary_min?`$${(+j.salary_min).toLocaleString()}–${(+j.salary_max).toLocaleString()}`:"",
+  url:j.url||j.apply_url,ts:j.epoch?j.epoch*1000:Date.parse(j.date),html:j.description,tags:(j.tags||[]).join(" ")}));
+
+async function jfind(){
+  if(jloading)return;
+  const t=T[lang],b=$("jgo");jloading=true;jfailed=false;jloaded=true;
+  b.disabled=true;b.classList.add("busy");$("jgoTxt").textContent=t.busy;
+  const plan=[["rm",()=>remotive("flutter")],["rm",()=>remotive("angular")],["jb",()=>jobicy("flutter")],["jb",()=>jobicy("angular")],["ro",()=>remoteok("flutter")],["ro",()=>remoteok("angular")]];
+  const st={},ok={};plan.forEach(([k])=>{st[k]="load";ok[k]=0});drawJStatus(st);jrender();
+  const res=await Promise.all(plan.map(async([k,fn])=>{try{const r=await fn();ok[k]++;return r}catch(e){return[]}}));
+  Object.keys(st).forEach(k=>st[k]=ok[k]?"ok":"err");drawJStatus(st);
+  const seen=new Map(),min=Date.now()-JOB_DAYS*864e5;
+  res.flat().forEach(j=>{if(!j||j.ts<min)return;const k=(j.title+"|"+j.company).toLowerCase();
+    if(seen.has(k)){const o=seen.get(k);o.stacks=uniq([...o.stacks,...j.stacks]);return}seen.set(k,j)});
+  jobs=[...seen.values()];jwhen=Date.now();
+  jfailed=!Object.values(ok).some(n=>n);jloading=false;
+  b.disabled=false;b.classList.remove("busy");$("jgoTxt").textContent=T[lang].jfind;
+  jrender();
+}
+function drawJStatus(st){$("jstatus").innerHTML=Object.keys(st).map(k=>`<span class="chip ${st[k]}"><i></i>${JSRC[k]}${st[k]=="err"?" · "+T[lang].fail:""}</span>`).join("")}
+function jrender(){
+  const t=T[lang];
+  $("jfilters").innerHTML=[["all",t.jall],["flutter","Flutter"],["angular","Angular"]].map(([k,l])=>`<button class="topic" data-k="${k}" aria-pressed="${jstack==k}">${l}</button>`).join("")+`<button class="topic" data-w="1" aria-pressed="${jworld}">${t.jworld}</button>`;
+  $("jtitle").textContent=t.jlatest;
+  const rows=jobs.filter(j=>(jstack=="all"||j.stacks.includes(jstack))&&(!jworld||j.world)).sort((a,b)=>(b.ts||0)-(a.ts||0));
+  jview=rows;
+  $("jcount").textContent=jloaded&&!jloading?t.jn(rows.length)+" · "+t.jwin+(jwhen?" · "+t.updated+" "+new Date(jwhen).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):""):"";
+  if(!jloaded){$("jlist").innerHTML="";return}
+  if(jloading){$("jlist").innerHTML='<li class="sk"></li>'.repeat(4);return}
+  if(jfailed){$("jlist").innerHTML=`<li class="msg"><strong>${t.jerrT}</strong>${t.errB}<br><button class="topic" onclick="jfind()">${t.retry}</button></li>`;return}
+  if(!rows.length){$("jlist").innerHTML=`<li class="msg"><strong>${t.jnoT}</strong>${t.jnoB}</li>`;return}
+  $("jlist").innerHTML=rows.map((j,n)=>{
+    const meta=[j.type,j.level&&!/any/i.test(j.level)?j.level:"",j.salary].filter(Boolean);
+    return `<li class="card" style="--s:var(--${j.src})">
+      <div class="top">${j.stacks.map(k=>`<span class="tag" style="--t:var(--c-${k=="flutter"?"mobile":"apps"})">${k=="flutter"?"Flutter":"Angular"}</span>`).join("")}<span class="src"><i></i>${JSRC[j.src]}</span></div>
+      <a class="title" href="${esc(j.url)}" data-n="${n}">${esc(j.title)}</a>
+      <p><b>${esc(j.company)}</b>${j.loc?" · "+esc(j.loc):""}</p>
+      <div class="meta">${meta.map(m=>`<span>${esc(m)}</span>`).join("")}${isNaN(j.ts)?"":`<span>${ago(j.ts)}</span>`}<span class="read">${j.html?t.read:t.apply}</span></div></li>`}).join("");
+}
+function setMode(m){
+  mode=m;[["newsHero","news"],["newsTabs","news"],["newsMain","news"],["jobsView","jobs"]].forEach(([id,k])=>$(id).hidden=(k!==m));
+  document.querySelectorAll("#modes button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===m));
+  scrollTo(0,0);if(m==="jobs"&&!jloaded)jfind();
+}
+$("modes").onclick=e=>{const b=e.target.closest("button");if(b)setMode(b.dataset.m)};
+$("jgo").onclick=jfind;
+$("jfilters").onclick=e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.w)jworld=!jworld;else jstack=b.dataset.k;jrender()};
+$("jlist").onclick=e=>{const a=e.target.closest("a.title");if(!a||e.ctrlKey||e.metaKey||e.shiftKey||e.button)return;e.preventDefault();openReader(jview[+a.dataset.n],a)};
 
 $("go").onclick=find;
 $("q").onkeydown=e=>{if(e.key==="Enter")find()};
