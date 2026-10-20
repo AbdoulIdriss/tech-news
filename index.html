@@ -55,7 +55,7 @@ h1{font:700 clamp(2rem,5.5vw,3.3rem)/1.08 var(--display);letter-spacing:-.035em;
 .tabs button[aria-pressed=true]{color:var(--ink);border-bottom-color:var(--tc,var(--accent))}
 .tabs i{width:9px;height:9px;border-radius:3px;background:var(--tc,var(--muted))}
 .tabs em{font-style:normal;font-size:.78rem;background:var(--line);color:var(--muted);padding:1px 7px;border-radius:999px}
-.head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:26px 0 14px}
+.head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:26px 0 14px}.head div span{display:block}
 .head h2{font:600 1.15rem var(--display);margin:0;letter-spacing:-.01em}
 .head span{color:var(--muted);font-size:.88rem}
 ul{list-style:none;margin:0;padding:0}
@@ -80,9 +80,25 @@ ul{list-style:none;margin:0;padding:0}
 .msg{grid-column:1/-1;text-align:center;padding:50px 20px;background:var(--surface);border:1px dashed var(--line);border-radius:16px;color:var(--muted)}
 .msg strong{display:block;font:600 1.2rem var(--display);color:var(--ink);margin-bottom:6px}
 .msg button{margin-top:14px}
+.sort{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:3px}
+.sort button{font:600 .8rem var(--body);border:0;background:none;color:var(--muted);padding:5px 12px;border-radius:7px;cursor:pointer}
+.sort button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.read{margin-left:auto;color:var(--accent);font-weight:600}
+.scrim{position:fixed;inset:0;background:rgba(8,12,24,.55);z-index:20;opacity:0;pointer-events:none;transition:opacity .2s}
+.panel{position:fixed;top:0;right:0;bottom:0;width:min(800px,100%);background:var(--surface);z-index:21;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s ease;box-shadow:-20px 0 50px -20px rgba(0,0,0,.4)}
+body.open .scrim{opacity:1;pointer-events:auto}body.open .panel{transform:none}body.open{overflow:hidden}
+.ph{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.ph .x{flex:none;width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:1.3rem;line-height:1;cursor:pointer}
+.ph .pt{flex:1;min-width:0;font:600 .95rem var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ph .orig{flex:none;font:600 .85rem var(--body);color:#fff;background:var(--accent);text-decoration:none;padding:9px 14px;border-radius:10px}
+.pb{flex:1;min-height:0;overflow:auto}
+.pb iframe{display:block;width:100%;height:100%;border:0;background:var(--surface)}
+.pb .msg{margin:24px}
+.pb .sk{margin:24px;height:110px}
 @media (max-width:720px){.grid{grid-template-columns:1fr}.go span.t{display:none}.go{padding:13px 16px}.hero{padding-top:18px}.card.feat{padding:20px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -110,24 +126,30 @@ ul{list-style:none;margin:0;padding:0}
 <div class="tabsbar"><div class="wrap"><div class="tabs" id="tabs" role="group"></div></div></div>
 
 <main class="wrap">
-  <div class="head"><h2 id="title"></h2><span id="count"></span></div>
+  <div class="head"><div><h2 id="title"></h2><span id="count"></span></div><div class="sort" id="sort" role="group"></div></div>
   <ul class="grid" id="list"></ul>
 </main>
 
+<div class="scrim" id="scrim"></div>
+<aside class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="pt" inert>
+  <div class="ph"><button class="x" id="px">&times;</button><span class="pt" id="pt"></span><a class="orig" id="po" target="_blank" rel="noopener noreferrer"></a></div>
+  <div class="pb" id="pb"></div>
+</aside>
+
 <script>
 const T={
- en:{h1:"Your daily tech radar.",sub:"Find what's new in programming, mobile, AI and innovation. Pulled live from Hacker News, GitHub and Dev.to.",
+ en:{h1:"Your daily tech radar.",sub:"Find what's new in programming, mobile, AI and innovation. Read every story right here, no tab-hopping. Live from Hacker News, GitHub and Dev.to, last 5 months only.",
   ph:"Search a topic, or leave empty for the latest…",find:"Find",busy:"Searching",topics:"Try",
   cats:{all:"All",mobile:"Mobile dev",programming:"Programming",ai:"AI",apps:"Apps",innovation:"Innovation"},
-  latest:"Latest across the web",results:q=>"Results for “"+q+"”",n:n=>n+(n==1?" story":" stories"),
+  latest:"Latest across the web",win:"last 5 months",newest:"Newest",popular:"Popular",read:"Read here",close:"Close",orig:"Open original",cantT:"This one can't be shown here",cantB:"The site doesn't allow reading inside other pages. You can still open the original.",results:q=>"Results for “"+q+"”",n:n=>n+(n==1?" story":" stories"),
   noT:"Nothing in this category yet",noB:"Try another category, or search a specific topic.",
   errT:"Couldn't reach any source",errB:"Open this file from your own website or by double-clicking it (not inside a preview window), check your connection, then try again.",retry:"Try again",
   pts:"points",com:"comments",stars:"stars",react:"reactions",fail:"unavailable",updated:"Updated",
   ago:(v,u)=>v+u+" ago",u:{m:"m",h:"h",d:"d"}},
- fr:{h1:"Votre radar tech au quotidien.",sub:"Découvrez les nouveautés en programmation, mobile, IA et innovation. Tiré en direct de Hacker News, GitHub et Dev.to.",
+ fr:{h1:"Votre radar tech au quotidien.",sub:"Découvrez les nouveautés en programmation, mobile, IA et innovation. Lisez chaque article ici, sans changer de page. En direct de Hacker News, GitHub et Dev.to, 5 derniers mois seulement.",
   ph:"Cherchez un sujet, ou laissez vide pour les dernières actus…",find:"Trouver",busy:"Recherche",topics:"Essayez",
   cats:{all:"Tout",mobile:"Mobile",programming:"Programmation",ai:"IA",apps:"Apps",innovation:"Innovation"},
-  latest:"Les dernières actus du web",results:q=>"Résultats pour « "+q+" »",n:n=>n+(n==1?" article":" articles"),
+  latest:"Les dernières actus du web",win:"5 derniers mois",newest:"Récents",popular:"Populaires",read:"Lire ici",close:"Fermer",orig:"Ouvrir l'original",cantT:"Impossible d'afficher cet article ici",cantB:"Le site interdit la lecture dans une autre page. Vous pouvez ouvrir l'original.",results:q=>"Résultats pour « "+q+" »",n:n=>n+(n==1?" article":" articles"),
   noT:"Rien dans cette catégorie",noB:"Essayez une autre catégorie ou cherchez un sujet précis.",
   errT:"Aucune source accessible",errB:"Ouvrez ce fichier depuis votre site ou en double-cliquant dessus (pas dans un aperçu), vérifiez votre connexion, puis réessayez.",retry:"Réessayer",
   pts:"points",com:"commentaires",stars:"étoiles",react:"réactions",fail:"indisponible",updated:"Mis à jour",
@@ -143,7 +165,7 @@ const RX={
  innovation:/(startup|quantum|robot|chips?|semiconductor|breakthrough|funding|raises|satellite|battery|hardware|launch|nasa|spacex|open.?source|research)/i
 };
 const TOPICS=["Flutter","SwiftUI","Kotlin","Rust","AI agents","Next.js"];
-let lang=get("tf_lang")||"en",cat="all",items=[],when=null,lastQ="",loading=false,failed=false;
+let lang=get("tf_lang")||"en",cat="all",items=[],when=null,lastQ="",loading=false,failed=false,view=[],sort="new";
 const $=id=>document.getElementById(id);
 function get(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function put(k,v){try{localStorage.setItem(k,v)}catch(e){}}
@@ -163,36 +185,39 @@ async function getJSON(url){
 const uniq=a=>[...new Set(a)];
 
 /* ---------- source adapters ---------- */
+const MAXD=150,cutoff=()=>Date.now()-MAXD*864e5;            // 5 months
+const hnFilter=pts=>enc("created_at_i>"+Math.floor(cutoff()/1000)+",points>"+pts);
 const hn=async(params,force=[])=>(await getJSON("https://hn.algolia.com/api/v1/search?"+params)).hits.filter(h=>h.title).map(h=>({
-  src:"hn",title:h.title,url:h.url||"https://news.ycombinator.com/item?id="+h.objectID,desc:"",ts:h.created_at_i*1000,
+  src:"hn",id:h.objectID,ext:h.url||"",title:h.title,url:h.url||"https://news.ycombinator.com/item?id="+h.objectID,desc:"",ts:h.created_at_i*1000,
   stat:[h.points+" {pts}",h.num_comments+" {com}"],cats:uniq([...force,...guess(h.title)])}));
 const gh=async(q,force=[])=>(await getJSON("https://api.github.com/search/repositories?sort=stars&order=desc&per_page=20&q="+enc(q))).items.map(r=>({
-  src:"gh",title:r.full_name,url:r.html_url,desc:r.description||"",ts:new Date(r.created_at).getTime(),
+  src:"gh",id:r.full_name,title:r.full_name,url:r.html_url,desc:r.description||"",ts:new Date(r.created_at).getTime(),
   stat:[r.stargazers_count.toLocaleString()+" {stars}",r.language||""].filter(Boolean),
   cats:uniq([...force,...guess(r.full_name+" "+(r.description||"")+" "+(r.topics||[]).join(" ")),"programming"])}));
 const dev=async(params,force=[])=>(await getJSON("https://dev.to/api/articles?"+params)).map(a=>({
-  src:"dev",title:a.title,url:a.url,desc:a.description||"",ts:new Date(a.published_timestamp).getTime(),
+  src:"dev",id:a.id,title:a.title,url:a.url,desc:a.description||"",ts:new Date(a.published_timestamp).getTime(),
   stat:[a.public_reactions_count+" {react}",a.comments_count+" {com}"],
   cats:uniq([...force,...guess(a.title+" "+(a.tag_list||[]).join(" ")),"programming"])}));
 
 function jobsFor(q){
   if(q){
-    const j=[["hn",()=>hn("tags=story&hitsPerPage=25&query="+enc(q))],["gh",()=>gh(q+" in:name,description,topics")]];
-    if(/^[\w.-]+$/.test(q))j.push(["dev",()=>dev("per_page=20&tag="+enc(q.toLowerCase().replace(/\./g,"")))]);
+    const j=[["hn",()=>hn("tags=story&hitsPerPage=30&query="+enc(q)+"&numericFilters="+hnFilter(2))],
+             ["gh",()=>gh(q+" in:name,description,topics created:>"+since(MAXD))]];
+    if(/^[\w.-]+$/.test(q))j.push(["dev",()=>dev("per_page=25&top="+MAXD+"&tag="+enc(q.toLowerCase().replace(/\./g,"")))]);
     return j;
   }
   return [
    ["hn",()=>hn("tags=front_page&hitsPerPage=30")],
-   ["hn",()=>hn("tags=story&hitsPerPage=10&query=flutter&numericFilters="+enc("points>3"),["mobile"])],
-   ["hn",()=>hn("tags=story&hitsPerPage=10&query=swift&numericFilters="+enc("points>10"),["mobile"])],
-   ["gh",()=>gh("created:>"+since(7))],
-   ["gh",()=>gh("topic:flutter created:>"+since(60),["mobile"])],
-   ["gh",()=>gh("topic:swift created:>"+since(60),["mobile"])],
-   ["dev",()=>dev("top=1&per_page=30")],
-   ["dev",()=>dev("tag=flutter&top=14&per_page=8",["mobile"])],
-   ["dev",()=>dev("tag=swift&top=14&per_page=8",["mobile"])],
-   ["dev",()=>dev("tag=android&top=14&per_page=8",["mobile"])],
-   ["dev",()=>dev("tag=ai&top=7&per_page=8",["ai"])]
+   ["hn",()=>hn("tags=story&hitsPerPage=10&query=flutter&numericFilters="+hnFilter(3),["mobile"])],
+   ["hn",()=>hn("tags=story&hitsPerPage=10&query=swift&numericFilters="+hnFilter(10),["mobile"])],
+   ["gh",()=>gh("created:>"+since(14))],
+   ["gh",()=>gh("topic:flutter created:>"+since(90),["mobile"])],
+   ["gh",()=>gh("topic:swift created:>"+since(90),["mobile"])],
+   ["dev",()=>dev("top=7&per_page=30")],
+   ["dev",()=>dev("tag=flutter&top=30&per_page=8",["mobile"])],
+   ["dev",()=>dev("tag=swift&top=30&per_page=8",["mobile"])],
+   ["dev",()=>dev("tag=android&top=30&per_page=8",["mobile"])],
+   ["dev",()=>dev("tag=ai&top=14&per_page=8",["ai"])]
   ];
 }
 
@@ -208,7 +233,7 @@ async function find(){
   Object.keys(st).forEach(s=>st[s]=ok[s]?"ok":"err");drawStatus(st);
   // merge, dedupe by url, interleave so all sources appear near the top
   const by={hn:[],gh:[],dev:[]},seen=new Map();
-  res.flat().forEach(i=>{const k=i.url.replace(/\/$/,"");
+  res.flat().forEach(i=>{if(!(i.ts>=cutoff()))return;const k=i.url.replace(/\/$/,"");
     if(seen.has(k)){const o=seen.get(k);o.cats=uniq([...o.cats,...i.cats]);return}
     seen.set(k,i);by[i.src].push(i)});
   const out=[],max=Math.max(...Object.values(by).map(a=>a.length));
@@ -230,10 +255,10 @@ function drawTabs(){
 }
 function render(){
   const t=T[lang];
-  drawTabs();
+  drawTabs();drawSort();
   $("title").textContent=lastQ?t.results(lastQ):t.latest;
-  const rows=items.filter(i=>cat=="all"||i.cats.includes(cat));
-  $("count").textContent=items.length?t.n(rows.length)+(when?" · "+t.updated+" "+new Date(when).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):""):"";
+  let rows=items.filter(i=>cat=="all"||i.cats.includes(cat));if(sort=="new")rows=[...rows].sort((a,b)=>b.ts-a.ts);view=rows;
+  $("count").textContent=items.length?t.n(rows.length)+" · "+t.win+(when?" · "+t.updated+" "+new Date(when).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):""):"";
   if(loading&&!items.length){$("list").innerHTML='<li class="sk"></li>'.repeat(5);return}
   if(failed){$("list").innerHTML=`<li class="msg"><strong>${t.errT}</strong>${t.errB}<br><button class="topic" onclick="find()">${t.retry}</button></li>`;return}
   if(!rows.length){$("list").innerHTML=`<li class="msg"><strong>${t.noT}</strong>${t.noB}</li>`;return}
@@ -241,18 +266,78 @@ function render(){
     const tags=PRIORITY.filter(k=>i.cats.includes(k)).slice(0,2);
     return `<li class="card${n==0?" feat":""}" style="--s:var(--${i.src})">
       <div class="top">${tags.map(k=>`<span class="tag" style="--t:var(--c-${k})">${t.cats[k]}</span>`).join("")}<span class="src"><i></i>${SRC[i.src]}</span></div>
-      <a class="title" href="${esc(i.url)}" target="_blank" rel="noopener noreferrer">${esc(i.title)}</a>
+      <a class="title" href="${esc(i.url)}" data-n="${n}">${esc(i.title)}</a>
       ${i.desc?`<p>${esc(i.desc)}</p>`:""}
-      <div class="meta">${i.stat.map(s=>`<span>${esc(s.replace(/\{(\w+)\}/g,(m,k)=>t[k]))}</span>`).join("")}<span>${ago(i.ts)}</span></div></li>`}).join("");
+      <div class="meta">${i.stat.map(s=>`<span>${esc(s.replace(/\{(\w+)\}/g,(m,k)=>t[k]))}</span>`).join("")}<span>${ago(i.ts)}</span><span class="read">${t.read}</span></div></li>`}).join("");
 }
 function ui(){
   const t=T[lang];document.documentElement.lang=lang;
   $("h1").textContent=t.h1;$("sub").textContent=t.sub;$("q").placeholder=t.ph;
   if(!loading)$("goTxt").textContent=t.find;
+  $("px").setAttribute("aria-label",t.close);
   $("topics").innerHTML=`<span class="lbl">${t.topics}</span>`+TOPICS.map(x=>`<button class="topic">${x}</button>`).join("");
   document.querySelectorAll(".lang button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.l==lang));
   render();
 }
+function drawSort(){const t=T[lang];$("sort").innerHTML=[["new",t.newest],["pop",t.popular]].map(([k,l])=>`<button data-s="${k}" aria-pressed="${sort==k}">${l}</button>`).join("")}
+
+/* ---------- in-site reader ---------- */
+const panel=$("panel"),bgEls=()=>[...document.querySelectorAll("body>.wrap,body>.tabsbar,body>main")];
+let lastFocus=null,token=0;
+function frame(html){
+  const cs=getComputedStyle(document.documentElement),v=n=>cs.getPropertyValue(n).trim();
+  const css=`body{margin:0 auto;padding:28px clamp(18px,5vw,48px) 70px;max-width:720px;background:${v("--surface")};color:${v("--ink")};font:18px/1.75 Georgia,ui-serif,serif;overflow-wrap:anywhere}
+h1,h2,h3,h4{font-family:system-ui,sans-serif;line-height:1.25;letter-spacing:-.01em}h1{font-size:1.9rem;margin:0 0 .4em}
+a{color:${v("--accent")}}img,video,iframe,svg{max-width:100%;height:auto}pre{overflow:auto;background:${v("--bg")};padding:14px;border-radius:10px;font-size:.85rem;line-height:1.5}
+code{font-family:ui-monospace,Menlo,monospace;font-size:.9em}blockquote{margin:1em 0;padding-left:16px;border-left:3px solid ${v("--line")};color:${v("--muted")}}
+table{border-collapse:collapse;display:block;overflow:auto}td,th{border:1px solid ${v("--line")};padding:6px 10px}hr{border:0;border-top:1px solid ${v("--line")}}
+.m{font:500 .9rem system-ui,sans-serif;color:${v("--muted")};margin:0 0 22px}`;
+  return `<!doctype html><meta charset="utf-8"><base target="_blank"><style>${css}</style><body>${html}`;
+}
+async function content(i){
+  if(i.src==="dev"){
+    const a=await getJSON("https://dev.to/api/articles/"+i.id);
+    return `<h1>${esc(a.title)}</h1><p class="m">${esc(a.user&&a.user.name||"")} · ${esc(a.readable_publish_date||"")} · ${a.reading_time_minutes||1} min</p>`+(a.cover_image?`<img src="${esc(a.cover_image)}" alt="">`:"")+a.body_html;
+  }
+  if(i.src==="gh"){
+    const r=await fetch("https://api.github.com/repos/"+i.title+"/readme",{headers:{Accept:"application/vnd.github.html+json"}});
+    if(!r.ok)throw new Error(r.status);
+    const d=new DOMParser().parseFromString(await r.text(),"text/html");
+    const raw="https://raw.githubusercontent.com/"+i.title+"/HEAD/",blob="https://github.com/"+i.title+"/blob/HEAD/";
+    const abs=u=>/^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(u),clean=u=>u.replace(/^\.?\//,"");
+    d.querySelectorAll("img[src]").forEach(e=>{const u=e.getAttribute("src");if(!abs(u))e.setAttribute("src",raw+clean(u))});
+    d.querySelectorAll("a[href]").forEach(e=>{const u=e.getAttribute("href");if(!abs(u))e.setAttribute("href",blob+clean(u))});
+    return `<h1>${esc(i.title)}</h1><p class="m">${esc(i.desc)}</p>`+d.body.innerHTML;
+  }
+  if(!i.ext){
+    const d=await getJSON("https://hn.algolia.com/api/v1/items/"+i.id);
+    return `<h1>${esc(d.title)}</h1><p class="m">${esc(d.author||"")}</p>`+(d.text||"");
+  }
+  const j=await getJSON("https://r.jina.ai/"+i.ext),c=(j.data&&j.data.content)||"";
+  if(c.length<300)throw new Error("empty");
+  let host="";try{host=new URL(i.ext).hostname}catch(e){}
+  return `<h1>${esc(j.data.title||i.title)}</h1><p class="m">${esc(host)}</p>`+(window.marked?marked.parse(c):"<p>"+esc(c).replace(/\n{2,}/g,"</p><p>")+"</p>");
+}
+async function openReader(i,opener){
+  const t=T[lang],my=++token;lastFocus=opener;
+  $("pt").textContent=i.title;$("po").href=i.url;$("po").textContent=t.orig+" ↗";
+  $("pb").innerHTML='<div class="sk"></div><div class="sk"></div><div class="sk"></div>';
+  bgEls().forEach(e=>e.inert=true);panel.inert=false;document.body.classList.add("open");$("px").focus();
+  try{
+    const html=await content(i);if(my!==token)return;
+    const f=document.createElement("iframe");f.sandbox="allow-popups allow-popups-to-escape-sandbox";f.title=i.title;f.srcdoc=frame(html);
+    $("pb").replaceChildren(f);
+  }catch(e){if(my===token)$("pb").innerHTML=`<div class="msg"><strong>${t.cantT}</strong>${t.cantB}</div>`}
+}
+function closeReader(){
+  token++;document.body.classList.remove("open");panel.inert=true;$("pb").innerHTML="";
+  bgEls().forEach(e=>e.inert=false);if(lastFocus)lastFocus.focus();
+}
+$("list").onclick=e=>{const a=e.target.closest("a.title");if(!a||e.ctrlKey||e.metaKey||e.shiftKey||e.button)return;e.preventDefault();openReader(view[+a.dataset.n],a)};
+$("scrim").onclick=closeReader;$("px").onclick=closeReader;
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.body.classList.contains("open"))closeReader()});
+$("sort").onclick=e=>{const b=e.target.closest("button");if(b){sort=b.dataset.s;render()}};
+
 $("go").onclick=find;
 $("q").onkeydown=e=>{if(e.key==="Enter")find()};
 $("topics").onclick=e=>{const b=e.target.closest(".topic");if(b){$("q").value=b.textContent;find()}};
